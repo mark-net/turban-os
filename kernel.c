@@ -210,19 +210,15 @@ void execute_command(const char* cmd) {
         print("Available commands:\n");
         print("  help     - show this help\n");
         print("  clear    - clear screen\n");
-        print("  echo     - simple echo test\n");
-        print("  fetch     - system information\n");
+        print("  fetch    - system information\n");
         print("  reboot   - reboot system\n");
     } 
     else if (strcmp(cmd, "clear") == 0) {
         clear_screen();
     }
-    else if (strcmp(cmd, "echo") == 0) {
-        print("Echo command works! Try typing something.\n");
-    }
     else if (strcmp(cmd, "fetch") == 0) {
         print("turbanOS v0.1 - development OS\n");
-        print("mali terminal \n");
+        print("mali terminal\n");
         print("VGA: 80x25 text mode\n");
         print("memory: 1MB+ (kernel loaded at 1MB)\n");
     }
