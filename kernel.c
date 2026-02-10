@@ -161,14 +161,58 @@ int strlen(const char* str) {
     return len;
 }
 
+void reboot() {
+    print("Rebooting system...\n");
+
+    for (volatile int i = 0; i < 500000; i++);
+    
+    unsigned char temp;
+    int attempts = 0;
+    const int max_attempts = 1000;
+
+    do {
+        temp = inb(0x64);
+        if ((temp & 0x02) == 0) break;
+        attempts++;
+        for (volatile int j = 0; j < 1000; j++);
+    } while (attempts < max_attempts);
+    
+    if (attempts >= max_attempts) {
+        print("Keyboard controller not responding. Trying alternative methods...\n");
+        
+        outb(0x604, 0x2000);  // for qemu
+        for (volatile int i = 0; i < 100000; i++);
+        
+        outb(0xB004, 0x2000);  // for bochs
+        for (volatile int i = 0; i < 100000; i++);
+        
+        outb(0xCF9, 0x0E);
+        for (volatile int i = 0; i < 100000; i++);
+        
+        print("Forcing triple fault...\n");
+        asm volatile("cli");
+        asm volatile("lidt 0");
+        asm volatile("int $0x00");
+    } else {
+        outb(0x64, 0xFE);
+        
+        for (volatile int i = 0; i < 1000000; i++);
+    }
+    
+    print("Reboot failed! System error.\n");
+    while (1) {
+        asm volatile("hlt");
+    }
+}
+
 void execute_command(const char* cmd) {
     if (strcmp(cmd, "help") == 0) {
         print("Available commands:\n");
         print("  help     - show this help\n");
         print("  clear    - clear screen\n");
         print("  echo     - simple echo test\n");
-        print("  info     - system information\n");
-        print("  reboot   - reboot system (not implemented)\n");
+        print("  fetch     - system information\n");
+        print("  reboot   - reboot system\n");
     } 
     else if (strcmp(cmd, "clear") == 0) {
         clear_screen();
@@ -176,13 +220,17 @@ void execute_command(const char* cmd) {
     else if (strcmp(cmd, "echo") == 0) {
         print("Echo command works! Try typing something.\n");
     }
-    else if (strcmp(cmd, "info") == 0) {
-        print("turbanOS v0.1 - Minimal Operating System\n");
-        print("Terminal with working keyboard\n");
+    else if (strcmp(cmd, "fetch") == 0) {
+        print("turbanOS v0.1 - development OS\n");
+        print("mali terminal \n");
         print("VGA: 80x25 text mode\n");
-        print("Memory: 1MB+ (kernel loaded at 1MB)\n");
+        print("memory: 1MB+ (kernel loaded at 1MB)\n");
+    }
+    else if (strcmp(cmd, "reboot") == 0) {
+        reboot();
     }
     else if (strcmp(cmd, "") == 0) {
+        // пустая команда - ничего не делаем
     }
     else {
         print("Unknown command: '");
@@ -195,31 +243,25 @@ void terminal() {
     char input[100];
     int input_pos = 0;
     
-    print("turbanOS Terminal v0.1\n");
-    print("Keyboard is WORKING! Try typing.\n");
-    print("Type 'help' for commands\n\n");
+    print("> ");
     
     while (1) {
-        print("> ");
+        char c = getchar();
         
-        input_pos = 0;
-        while (1) {
-            char c = getchar();
-            
-            if (c == '\n') {
-                putchar('\n');
-                input[input_pos] = '\0';
-                execute_command(input);
-                break;
-            } else if (c == '\b') {
-                if (input_pos > 0) {
-                    input_pos--;
-                    putchar('\b');
-                }
-            } else if (c >= 32 && c <= 126 && input_pos < 99) {
-                input[input_pos++] = c;
-                putchar(c);
+        if (c == '\n') {
+            putchar('\n');
+            input[input_pos] = '\0';
+            execute_command(input);
+            input_pos = 0;
+            print("> ");
+        } else if (c == '\b') {
+            if (input_pos > 0) {
+                input_pos--;
+                putchar('\b');
             }
+        } else if (c >= 32 && c <= 126 && input_pos < 99) {
+            input[input_pos++] = c;
+            putchar(c);
         }
     }
 }
@@ -227,29 +269,8 @@ void terminal() {
 void OSmain() {
     clear_screen();
     print("Booting turbanOS...\n");
-    print("Initializing keyboard...\n");
     
-    for (volatile int i = 0; i < 1000000; i++);
+    for (volatile int i = 0; i < 500000; i++);
     
-    print("Keyboard test: press any key...\n");
-    
-    int key_pressed = 0;
-    for (int i = 0; i < 100; i++) {
-        if (has_char()) {
-            char c = getchar();
-            print("Key pressed: '");
-            putchar(c);
-            print("'\n");
-            key_pressed = 1;
-            break;
-        }
-        for (volatile int j = 0; j < 10000; j++);
-    }
-    
-    if (!key_pressed) {
-        print("No keys pressed. Continuing...\n");
-    }
-    
-    print("\n=== Starting terminal ===\n\n");
     terminal();
 }
