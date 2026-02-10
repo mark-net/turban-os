@@ -33,7 +33,7 @@ nasm -f elf32 boot.asm -o boot.o
 gcc -m32 -ffreestanding -c kernel.c -o kernel.o
 ld -m elf_i386 -T link.ld -o kernel.bin boot.o kernel.o
 ```
-### Build in QEMU
+### Run in QEMU
 
 ```bash
 qemu-system-i386 -kernel kernel.bin
@@ -42,5 +42,6 @@ qemu-system-i386 -kernel kernel.bin
 
 
 Educational project demonstrating basic operating system concepts: boot process, hardware interaction, memory management, and user interface implementation.
+
 
 
