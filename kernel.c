@@ -2,6 +2,16 @@
 #define VGA_HEIGHT 25
 #define VGA_MEMORY 0xB8000
 
+#define CMOS_ADDRESS 0x70
+#define CMOS_DATA 0x71
+#define CMOS_SECONDS 0x00
+#define CMOS_MINUTES 0x02
+#define CMOS_HOURS 0x04
+#define CMOS_DAY 0x07
+#define CMOS_MONTH 0x08
+#define CMOS_YEAR 0x09
+#define CMOS_STATUS_A 0x0A
+
 static inline unsigned char inb(unsigned short port) {
     unsigned char result;
     asm volatile("inb %1, %0" : "=a"(result) : "Nd"(port));
@@ -161,6 +171,95 @@ int strlen(const char* str) {
     return len;
 }
 
+static unsigned char bcd_to_bin(unsigned char bcd) {
+    return ((bcd >> 4) * 10) + (bcd & 0x0F);
+}
+
+void getTime() {
+    unsigned char seconds, minutes, hours;
+    
+    asm volatile("cli");
+    
+    outb(CMOS_ADDRESS, CMOS_STATUS_A);
+    while (inb(CMOS_DATA) & 0x80);
+    
+    outb(CMOS_ADDRESS, CMOS_HOURS);
+    hours = inb(CMOS_DATA);
+    
+    outb(CMOS_ADDRESS, CMOS_MINUTES);
+    minutes = inb(CMOS_DATA);
+    
+    outb(CMOS_ADDRESS, CMOS_SECONDS);
+    seconds = inb(CMOS_DATA);
+    
+    asm volatile("sti");
+    
+    hours = bcd_to_bin(hours);
+    minutes = bcd_to_bin(minutes);
+    seconds = bcd_to_bin(seconds);
+    
+    hours = hours + 3;
+    if (hours >= 24) {
+        hours = hours - 24;
+    }
+    
+    print("Current time: ");
+    
+    putchar((hours / 10) + '0');
+    putchar((hours % 10) + '0');
+    putchar(':');
+    
+    putchar((minutes / 10) + '0');
+    putchar((minutes % 10) + '0');
+    putchar(':');
+    
+    putchar((seconds / 10) + '0');
+    putchar((seconds % 10) + '0');
+    
+    print(" MSK\n");
+}
+
+void getDate() {
+    unsigned char day, month, year;
+    
+    asm volatile("cli");
+    
+    outb(CMOS_ADDRESS, CMOS_STATUS_A);
+    while (inb(CMOS_DATA) & 0x80);
+    
+    outb(CMOS_ADDRESS, CMOS_DAY);
+    day = inb(CMOS_DATA);
+    
+    outb(CMOS_ADDRESS, CMOS_MONTH);
+    month = inb(CMOS_DATA);
+    
+    outb(CMOS_ADDRESS, CMOS_YEAR);
+    year = inb(CMOS_DATA);
+    
+    asm volatile("sti");
+    
+    day = bcd_to_bin(day);
+    month = bcd_to_bin(month);
+    year = bcd_to_bin(year);
+    
+    print("Current date: ");
+    
+    putchar((day / 10) + '0');
+    putchar((day % 10) + '0');
+    putchar('.');
+    
+    putchar((month / 10) + '0');
+    putchar((month % 10) + '0');
+    putchar('.');
+    
+    putchar('2');
+    putchar('0');
+    putchar((year / 10) + '0');
+    putchar((year % 10) + '0');
+    
+    print("\n");
+}
+
 void reboot() {
     print("Rebooting system...\n");
 
@@ -180,10 +279,10 @@ void reboot() {
     if (attempts >= max_attempts) {
         print("Keyboard controller not responding. Trying alternative methods...\n");
         
-        outb(0x604, 0x2000);  // for qemu
+        outb(0x604, 0x2000);
         for (volatile int i = 0; i < 100000; i++);
         
-        outb(0xB004, 0x2000);  // for bochs
+        outb(0xB004, 0x2000);
         for (volatile int i = 0; i < 100000; i++);
         
         outb(0xCF9, 0x0E);
@@ -195,7 +294,6 @@ void reboot() {
         asm volatile("int $0x00");
     } else {
         outb(0x64, 0xFE);
-        
         for (volatile int i = 0; i < 1000000; i++);
     }
     
@@ -208,30 +306,37 @@ void reboot() {
 void execute_command(const char* cmd) {
     if (strcmp(cmd, "help") == 0) {
         print("Available commands:\n");
-        print("  help     - show this help\n");
-        print("  clear    - clear screen\n");
-        print("  fetch    - system information\n");
-        print("  reboot   - reboot system\n");
+        print("  help   - show this help\n");
+        print("  clear  - clear the screen\n");
+        print("  fetch  - system information\n");
+        print("  time   - show current time\n");
+        print("  date   - show current date\n");
+        print("  reboot - reboot the system\n");
     } 
     else if (strcmp(cmd, "clear") == 0) {
         clear_screen();
     }
+    else if (strcmp(cmd, "time") == 0) {
+        getTime();
+    }
+    else if (strcmp(cmd, "date") == 0) {
+        getDate();
+    }
     else if (strcmp(cmd, "fetch") == 0) {
-        print("turbanOS v0.2 - development OS\n");
-        print("mali terminal\n");
+        print("turbanOS v0.3 - development OS\n");
+        print("author (github.com/mark-net)\n");
         print("VGA: 80x25 text mode\n");
-        print("memory: 1MB+ (kernel loaded at 1MB)\n");
+        print("memory: 1Mb+ (core loaded at 1MB address)\n");
     }
     else if (strcmp(cmd, "reboot") == 0) {
         reboot();
     }
     else if (strcmp(cmd, "") == 0) {
-        // пустая команда - ничего не делаем
     }
     else {
         print("Unknown command: '");
         print(cmd);
-        print("'. Type 'help' for list.\n");
+        print("'. Type 'help' for a list of commands.\n");
     }
 }
 
@@ -265,6 +370,7 @@ void terminal() {
 void OSmain() {
     clear_screen();
     print("Booting turbanOS...\n");
+    print("Type 'help' for a list of commands.\n");
     
     for (volatile int i = 0; i < 500000; i++);
     
