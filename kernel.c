@@ -217,7 +217,7 @@ void execute_command(const char* cmd) {
         clear_screen();
     }
     else if (strcmp(cmd, "fetch") == 0) {
-        print("turbanOS v0.1 - development OS\n");
+        print("turbanOS v0.2 - development OS\n");
         print("mali terminal\n");
         print("VGA: 80x25 text mode\n");
         print("memory: 1MB+ (kernel loaded at 1MB)\n");

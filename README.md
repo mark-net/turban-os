@@ -15,8 +15,8 @@ A minimal 32-bit x86 operating system with keyboard input, VGA text output, and 
 
 - `help` - Display available commands
 - `clear` - Clear the terminal screen
-- `echo` - Simple echo test
-- `info` - Display system information
+- `fetch` - Simple echo test
+- `reboot` - Display system information
 
 ## Project Structure
 
@@ -26,22 +26,17 @@ A minimal 32-bit x86 operating system with keyboard input, VGA text output, and 
 
 ## Building
 
-Requires NASM, GCC, and a cross-compiler toolchain for i386. The kernel is loaded at 1MB and follows standard Multiboot conventions.
+Requires NASM, GCC, QEMU VM and a cross-compiler toolchain for i386. The kernel is loaded at 1MB and follows standard Multiboot conventions.
+I recommend that you use microsoft WSL for compilation.
+For WSL:
 
 ```bash
-nasm -f elf32 boot.asm -o boot.o
-gcc -m32 -ffreestanding -c kernel.c -o kernel.o
-ld -m elf_i386 -T link.ld -o kernel.bin boot.o kernel.o
+nasm -f elf32 boot.asm -o boot.o && gcc -m32 -ffreestanding -nostdlib -fno-stack-protector -c kernel.c -o kernel.o && ld -m elf_i386 -T link.ld -o kernel.bin boot.o kernel.o && qemu-system-i386 -kernel kernel.bin
 ```
-### Run in QEMU
 
-```bash
-qemu-system-i386 -kernel kernel.bin
-```
 ## Purpose
 
-
-Educational project demonstrating basic operating system concepts: boot process, hardware interaction, memory management, and user interface implementation.
+Educational project demonstrating basic operating system concepts: boot process, hardware interaction, keyboard driver, and user interface implementation.
 
 
 
