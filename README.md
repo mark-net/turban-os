@@ -1,5 +1,9 @@
 ﻿# turbanOS
 
+![scrn](scrn/fetch.png)
+![scrn](scrn/datetime.png)
+![scrn](scrn/help.png)
+
 A minimal 32-bit x86 operating system with keyboard input, VGA text output, and a simple interactive terminal.
 
 ## Features
