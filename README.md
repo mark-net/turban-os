@@ -31,6 +31,8 @@ A minimal 32-bit x86 operating system with keyboard input, VGA text output, and 
 - `help` - Display available commands
 - `clear` - Clear the terminal screen
 - `fetch` - Simple echo test
+- `time` - Show current time
+- `date` - Show current date
 - `reboot` - Display system information
 
 ## Project Structure
@@ -52,6 +54,7 @@ nasm -f elf32 boot.asm -o boot.o && gcc -m32 -ffreestanding -nostdlib -fno-stack
 ## Purpose
 
 Educational project demonstrating basic operating system concepts: boot process, hardware interaction, keyboard driver, and user interface implementation.
+
 
 
 
